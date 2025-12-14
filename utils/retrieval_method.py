@@ -7,13 +7,13 @@ import numpy as np
 import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
-from langchain.schema import Document
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_core.documents import Document
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 import chromadb
 from langchain_chroma import Chroma
 from langchain_community.retrievers import BM25Retriever
 from tqdm import tqdm
-from langchain.retrievers.document_compressors.cross_encoder_rerank import CrossEncoderReranker
+from langchain_classic.retrievers.document_compressors import CrossEncoderReranker
 import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import os

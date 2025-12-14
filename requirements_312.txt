@@ -1,0 +1,49 @@
+# Core web frameworks
+fastapi==0.116.0
+uvicorn==0.38.0
+streamlit
+flask==3.1.1
+flask-cors==6.0.1
+
+# OpenAI and LLM
+openai
+langchain
+langchain-community
+langchain-openai
+langchain-text-splitters
+tiktoken
+
+# Search and web scraping
+duckduckgo-search==8.1.1
+baidusearch==1.0.3
+beautifulsoup4
+lxml
+selectolax
+readability-lxml
+markdownify
+
+# Vector DB and retrieval
+chromadb
+langchain-chroma
+rank-bm25
+
+# PDF and document processing
+PyMuPDF
+
+# Text processing
+jieba
+numpy
+scipy
+scikit-learn
+
+# HTTP and networking
+requests
+httpx
+primp
+aiohttp
+
+# Utilities
+python-dotenv
+pydantic
+pydantic-settings
+pyyaml
