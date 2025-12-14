@@ -328,10 +328,49 @@ async def search(req: SearchRequest):
             if retrieval_vertion == "v2":
                 retrieval_v2 = Retrieval_v2()
                 context = retrieval_v2.retrieve(search_plan_data, web_pages)
+
+                # Extract and emit scoring information for v2
+                retrieval_scores = []
+                for query, pages in context.items():
+                    for page in pages:
+                        retrieval_scores.append({
+                            'query': query,
+                            'title': page.get('title', 'Unknown')[:50],
+                            'embedding_score': float(page.get('embedding_score', 0)),
+                            'bm25_score': float(page.get('bm25_score', 0)),
+                            'combined_score': float(page.get('combined_score', 0))
+                        })
+
+                if retrieval_scores:
+                    yield await stream_json("retrieval_scores", {
+                        "version": "v2",
+                        "method": "Embedding + BM25 (weighted)",
+                        "scores": retrieval_scores
+                    })
+                    await asyncio.sleep(0)
             else:
                 retrieval_v1 = Retrieval_v1()
                 all_web_pages = [page for pages in web_pages.values() for page in pages]
                 context = retrieval_v1.retrieve(queries=[req.query],search_plan_data=search_plan_data, web_pages=all_web_pages)
+
+                # Extract and emit basic information for v1
+                retrieval_scores = []
+                for idx, doc in enumerate(context):
+                    if isinstance(doc, Document):
+                        retrieval_scores.append({
+                            'rank': idx + 1,
+                            'title': doc.metadata.get('title', 'Unknown')[:50],
+                            'method': 'RRF (BM25 + Similarity + Rerank)'
+                        })
+
+                if retrieval_scores:
+                    yield await stream_json("retrieval_scores", {
+                        "version": "v1",
+                        "method": "RRF (BM25 + Similarity + Rerank)",
+                        "chunks_retrieved": len(retrieval_scores),
+                        "scores": retrieval_scores
+                    })
+                    await asyncio.sleep(0)
 
 
             response_generator = search_generate(req.query, context, search_plan_data, chat_history=processed_history)

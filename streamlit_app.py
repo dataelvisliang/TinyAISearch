@@ -274,6 +274,19 @@ def process_streaming_response(response, message_placeholder, search_steps_place
                                 "preview": full_content[:200] + "..." if len(full_content) > 200 else full_content
                             })
 
+                    elif chunk_type == 'retrieval_scores':
+                        # Handle retrieval scoring information
+                        version = payload.get('version', 'unknown')
+                        method = payload.get('method', 'unknown')
+                        scores = payload.get('scores', [])
+
+                        add_span_event(span_id, "retrieval_scores_received", {
+                            "version": version,
+                            "method": method,
+                            "chunks_count": len(scores),
+                            "scores": scores
+                        })
+
                     elif chunk_type == 'reference':
                         references = payload if isinstance(payload, list) else []
                         add_span_event(span_id, "references_received", {
@@ -660,8 +673,49 @@ if st.session_state.show_trace and trace_col:
                     elif log_type == 'span_event':
                         st.text(f"  {timestamp} {message}")
                         if data:
-                            with st.expander(f"🔍 Event Data", expanded=False):
-                                st.json(data)
+                            # Special handling for retrieval_scores event
+                            if message and "retrieval_scores_received" in message:
+                                version = data.get('version', 'unknown')
+                                method = data.get('method', 'unknown')
+                                scores = data.get('scores', [])
+                                chunks_count = data.get('chunks_count', 0)
+
+                                with st.expander(f"📊 Retrieval Scores ({version} - {chunks_count} chunks)", expanded=True):
+                                    st.caption(f"**Method**: {method}")
+
+                                    if version == 'v2':
+                                        # Display v2 scores with detailed metrics
+                                        for i, score_data in enumerate(scores, 1):
+                                            query = score_data.get('query', 'N/A')
+                                            title = score_data.get('title', 'Unknown')
+                                            emb_score = score_data.get('embedding_score', 0)
+                                            bm25_score = score_data.get('bm25_score', 0)
+                                            combined = score_data.get('combined_score', 0)
+
+                                            st.markdown(f"**{i}. {title}**")
+                                            st.caption(f"Query: `{query}`")
+                                            col1, col2, col3 = st.columns(3)
+                                            with col1:
+                                                st.metric("Embedding", f"{emb_score:.4f}")
+                                            with col2:
+                                                st.metric("BM25", f"{bm25_score:.4f}")
+                                            with col3:
+                                                st.metric("Combined", f"{combined:.4f}")
+                                            st.markdown("---")
+                                    elif version == 'v1':
+                                        # Display v1 scores with rank
+                                        for score_data in scores:
+                                            rank = score_data.get('rank', 'N/A')
+                                            title = score_data.get('title', 'Unknown')
+                                            method_used = score_data.get('method', 'N/A')
+
+                                            st.markdown(f"**Rank {rank}**: {title}")
+                                            st.caption(f"Method: {method_used}")
+                                            st.markdown("---")
+                            else:
+                                # Default JSON display for other events
+                                with st.expander(f"🔍 Event Data", expanded=False):
+                                    st.json(data)
 
                     elif log_type == 'error':
                         st.error(f"**❌ {timestamp}** {message}")
